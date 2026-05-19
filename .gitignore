@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-selfcheck.json
+
+# Distribution / packaging
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Data files — keep the directory structure but not large source files
+data/*.xml
+data/*.zip
+data/*.csv
+output/
+
+# GTFS output
+*.zip
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
