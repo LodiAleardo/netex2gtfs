@@ -40,7 +40,7 @@ def _load_xml(xml_path: str) -> ET.Element:
         return ET.fromstring(text.encode("utf-8"))
 
 
-def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
+def parse(xml_path: str) -> dict:
     log.info("Parsing %s", xml_path)
     root = _load_xml(xml_path)
 
@@ -48,8 +48,6 @@ def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
     stops, ssp_to_stop = _parse_stops(root)
     routes = _parse_routes(root)
     service_dates, feed_end_date, dt_weekdays, dt_op_ends = _parse_calendar(root)
-    # if extend_calendar_weeks > 0 and feed_end_date is not None:
-    #     _extend_calendar(service_dates, feed_end_date, dt_weekdays, dt_op_ends, extend_calendar_weeks)
     patterns, spijp_to_ssp, pattern_to_line = _parse_journey_patterns(root)
     trips, stop_times = _parse_timetable(root, patterns, pattern_to_line, ssp_to_stop)
 
@@ -270,48 +268,6 @@ def _parse_calendar(
         feed_end_date = max(op_end.values())
 
     return service_dates, feed_end_date, dt_weekdays, dt_op_ends
-
-
-def _extend_calendar(
-    service_dates: dict[str, list[str]],
-    feed_end_date: date,
-    dt_weekdays: dict[str, frozenset[int]],
-    dt_op_ends: dict[str, date],
-    extend_weeks: int,
-) -> None:
-    """Extend services whose last period ends within the feed's final week.
-
-    For each qualifying DayType, the weekly pattern is repeated from the day
-    after feed_end_date for extend_weeks weeks (no holiday exceptions applied).
-    """
-    threshold = feed_end_date - timedelta(days=6)
-    extension_end = feed_end_date + timedelta(weeks=extend_weeks)
-    extended = 0
-
-    for dt_id, dates in service_dates.items():
-        op_end_dt = dt_op_ends.get(dt_id)
-        if op_end_dt is None or op_end_dt < threshold:
-            continue
-        weekdays = dt_weekdays.get(dt_id)
-        if not weekdays:
-            continue
-
-        existing = set(dates)
-        d = feed_end_date + timedelta(days=1)
-        new_dates: list[str] = []
-        while d <= extension_end:
-            if d.weekday() in weekdays:
-                iso = d.isoformat()
-                if iso not in existing:
-                    new_dates.append(iso)
-            d += timedelta(days=1)
-
-        if new_dates:
-            service_dates[dt_id] = sorted(existing | set(new_dates))
-            extended += 1
-
-    if extended:
-        log.info("extend_calendar: extended %d services by %d weeks beyond %s", extended, extend_weeks, feed_end_date)
 
 
 # ---------------------------------------------------------------------------
