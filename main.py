@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Convert NeTEx XML to GTFS static feed.")
     p.add_argument("--input", required=True, type=Path, help="Path to NeTEx XML file")
     p.add_argument("--output", default=Path("output/gtfs.zip"), type=Path, help="Output GTFS zip path")
-    p.add_argument("--extend", type=int, default=0, help="Extend feed to this date by N week(s)")
+    p.add_argument("--extend-calendar-weeks", type=int, default=0, help="Extend feed by N weeks repeating the last week's pattern")
     p.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     return p.parse_args()
 
@@ -27,7 +27,7 @@ def main() -> None:
         sys.exit(1)
 
     writer.write(
-        parser.parse(str(args.input), extend_calendar_weeks=args.extend),
+        parser.parse(str(args.input), extend_calendar_weeks=args.extend_calendar_weeks),
         args.output)
 
 
