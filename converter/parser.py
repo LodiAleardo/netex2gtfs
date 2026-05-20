@@ -1,15 +1,29 @@
 import io
 import logging
 import re
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElementTree
 from datetime import date, timedelta
 from typing import Optional
 
 NS = "http://www.netex.org.uk/netex"
 
-_DOW_MAP = {
-    "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
-    "Friday": 4, "Saturday": 5, "Sunday": 6,
+DAY_OF_THE_WEEK_TO_CARDINAL = {
+    "Monday": 0,
+    "Tuesday": 1,
+    "Wednesday": 2,
+    "Thursday": 3,
+    "Friday": 4,
+    "Saturday": 5,
+    "Sunday": 6,
+}
+
+TRANSPORT_TYPE = {
+    "tram": 0,
+    "metro": 1,
+    "rail": 2,
+    "bus": 3,
+    "coach": 3,
+    "ferry": 4,
 }
 
 log = logging.getLogger(__name__)
@@ -26,23 +40,16 @@ def _txt(el, tag: str, default: str = "") -> str:
     return child.text.strip().replace("�", "")
 
 
-def _load_xml(xml_path: str) -> ET.Element:
-    """Parse XML with encoding fallback for files that declare UTF-8 but contain Latin-1 bytes."""
+def load_xml(xml_path: str) -> ElementTree.Element:
+    """Parse XML without encoding fallback for files that declare UTF-8 but contain Latin-1 bytes."""
+    # ToDo: I could throw ElementTree.ParseError but for the moment ignoring
     with open(xml_path, "rb") as f:
-        raw = f.read()
-    try:
-        return ET.parse(io.BytesIO(raw)).getroot()
-    except ET.ParseError:
-        # File declares UTF-8 but has raw Latin-1/Windows-1252 bytes → re-parse as Latin-1
-        log.warning("UTF-8 parse failed, retrying as Latin-1")
-        text = raw.decode("latin-1")
-        text = re.sub(r"<\?xml.*?\?>", "", text, count=1)
-        return ET.fromstring(text.encode("utf-8"))
+        return ElementTree.parse(io.BytesIO(f.read())).getroot()
 
 
 def parse(xml_path: str) -> dict:
     log.info("Parsing %s", xml_path)
-    root = _load_xml(xml_path)
+    root = load_xml(xml_path)
 
     agencies = _parse_agencies(root)
     stops, ssp_to_stop = _parse_stops(root)
@@ -167,16 +174,6 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
 # Routes
 # ---------------------------------------------------------------------------
 
-_TRANSPORT_TYPE = {
-    "bus": 3,
-    "coach": 3,
-    "tram": 0,
-    "metro": 1,
-    "rail": 2,
-    "ferry": 4,
-}
-
-
 def _parse_routes(root) -> list[dict]:
     routes = []
     for line in root.iter(_t("Line")):
@@ -188,7 +185,7 @@ def _parse_routes(root) -> list[dict]:
                 "agency_id": op_ref.get("ref") if op_ref is not None else "",
                 "route_short_name": _txt(line, "ShortName") or _txt(line, "PublicCode"),
                 "route_long_name": _txt(line, "Name"),
-                "route_type": str(_TRANSPORT_TYPE.get(mode, 3)),
+                "route_type": str(TRANSPORT_TYPE.get(mode, 3)),
                 "route_desc": _txt(line, "Description"),
             }
         )
@@ -231,7 +228,7 @@ def _parse_calendar(
         dow_el = dt.find(f".//{_t('DaysOfWeek')}")
         if dow_el is None or not dow_el.text:
             continue
-        days = frozenset(_DOW_MAP[d] for d in dow_el.text.split() if d in _DOW_MAP)
+        days = frozenset(DAY_OF_THE_WEEK_TO_CARDINAL[d] for d in dow_el.text.split() if d in DAY_OF_THE_WEEK_TO_CARDINAL)
         if days:
             dt_weekdays[dt.get("id")] = days
 

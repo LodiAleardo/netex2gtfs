@@ -10,13 +10,14 @@ _AGENCY_FIELDS = ["agency_id", "agency_name", "agency_url", "agency_timezone", "
 _STOPS_FIELDS = ["stop_id", "stop_name", "stop_lat", "stop_lon"]
 _ROUTES_FIELDS = ["route_id", "agency_id", "route_short_name", "route_long_name", "route_type", "route_desc"]
 _TRIPS_FIELDS = ["route_id", "service_id", "trip_id", "trip_headsign"]
-_STOP_TIMES_FIELDS = ["trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "pickup_type", "drop_off_type"]
+_STOP_TIMES_FIELDS = [
+    "trip_id", "arrival_time", "departure_time", "stop_id",
+    "stop_sequence", "pickup_type", "drop_off_type"]
 _CALENDAR_DATES_FIELDS = ["service_id", "date", "exception_type"]
 _FEED_INFO_FIELDS = [
     "feed_publisher_name", "feed_publisher_url", "feed_lang",
     "feed_start_date", "feed_end_date", "feed_version",
-    "feed_contact_email", "feed_contact_url",
-]
+    "feed_contact_email", "feed_contact_url"]
 
 
 def _csv_bytes(fields: list[str], rows: list[dict]) -> bytes:
@@ -42,6 +43,7 @@ def _calendar_dates_rows(service_dates: dict[str, list[str]]) -> list[dict]:
 
 
 def write(data: dict, output_path: Path) -> None:
+    """Serialize a parsed GTFS data dict to a zipped GTFS feed at output_path."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     files = {

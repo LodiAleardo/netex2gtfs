@@ -25,8 +25,9 @@ def main() -> None:
         logging.error("Input file not found: %s", args.input)
         sys.exit(1)
 
-    data = parser.parse(str(args.input))
-    writer.write(data, args.output)
+    writer.write(
+        parser.parse(str(args.input)),
+        args.output)
 
 
 if __name__ == "__main__":
