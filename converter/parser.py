@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ElementTree
 from datetime import date, timedelta
 from typing import Optional
 
+from converter.extender import extend_calendar
+
 NS = "http://www.netex.org.uk/netex"
 
 DAY_OF_THE_WEEK_TO_CARDINAL = {
@@ -46,8 +48,7 @@ def load_xml(xml_path: str) -> ElementTree.Element:
     with open(xml_path, "rb") as f:
         return ElementTree.parse(io.BytesIO(f.read())).getroot()
 
-
-def parse(xml_path: str) -> dict:
+def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
     log.info("Parsing %s", xml_path)
     root = load_xml(xml_path)
 
@@ -55,6 +56,8 @@ def parse(xml_path: str) -> dict:
     stops, ssp_to_stop = _parse_stops(root)
     routes = _parse_routes(root)
     service_dates, feed_end_date, dt_weekdays, dt_op_ends = _parse_calendar(root)
+    if extend_calendar_weeks > 0 and feed_end_date is not None:
+        extend_calendar(service_dates, feed_end_date, dt_weekdays, extend_calendar_weeks)
     patterns, spijp_to_ssp, pattern_to_line = _parse_journey_patterns(root)
     trips, stop_times = _parse_timetable(root, patterns, pattern_to_line, ssp_to_stop)
 
