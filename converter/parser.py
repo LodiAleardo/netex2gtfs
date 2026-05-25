@@ -145,6 +145,15 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
     for sp in root.iter(_t("StopPlace")):
         centroid = sp.find(_t("Centroid"))
         if centroid is None:
+            # IT-ITH3-BIV_GOMMA_L1.xml places coordinates on the Quay, not on the StopPlace
+            quays_el = sp.find(_t("quays"))
+            if quays_el is not None:
+                for quay in quays_el:
+                    c = quay.find(_t("Centroid"))
+                    if c is not None:
+                        centroid = c
+                        break
+        if centroid is None:
             continue
         loc = centroid.find(_t("Location"))
         if loc is None:
