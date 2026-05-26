@@ -4,7 +4,9 @@ A Python tool to convert [NeTEx](https://netex-cen.eu/) (Network Timetable Excha
 
 ## Overview
 
-NeTEx is a CEN European standard for exchanging public transport schedules and related data. GTFS is the de facto standard consumed by trip planners (Google Maps, OpenTripPlanner, Transitland, etc.). This tool bridges the two formats, with a focus on Italian regional feeds published under the national open-data program.
+NeTEx is a CEN European standard for exchanging public transport schedules and related data. 
+GTFS is the de facto standard consumed by trip planners (Google Maps, OpenTripPlanner, Transitland, etc.). 
+This tool bridges the two formats, with a **focus on Italian regional feeds** published under the national open-data program.
 
 ## Features
 
@@ -58,11 +60,14 @@ Converts every `.xml` in `data/`, runs the GTFS validator against each output, a
 
 ## Input data
 
-Place NeTEx XML files in the `data/` directory. They are excluded from version control via `.gitignore` due to file size. The converter has been tested against the Italian national NeTEx open-data exports available at [dati.gov.it](https://www.dati.gov.it/).
+Place NeTEx XML files in the `data/` directory.
+They are excluded from version control via `.gitignore` due to file size. T
+he converter has been tested against the Italian national NeTEx open-data exports available at [dati.gov.it](https://www.dati.gov.it/).
 
 ## Output
 
-The converter produces a standard GTFS static zip. Files included depend on source data:
+The converter produces a standard GTFS static zip.
+Files included depend on source data:
 
 | File | Always present | Condition |
 |------|---------------|-----------|
@@ -76,20 +81,6 @@ The converter produces a standard GTFS static zip. Files included depend on sour
 | `areas.txt` | no | TariffZone elements present |
 | `stop_areas.txt` | no | TariffZone assignments present |
 
-## Project structure
-
-```
-netex2gtfs/
-├── main.py               # CLI entry point
-├── validate.py           # Batch conversion + GTFS validation
-├── converter/
-│   ├── parser.py         # NeTEx XML → Python dicts
-│   ├── writer.py         # Python dicts → GTFS zip
-│   └── extender.py       # Calendar extension logic
-├── data/                 # Input NeTEx files (not tracked)
-├── output/               # Generated GTFS feeds (not tracked)
-└── requirements.txt
-```
 
 ## License
 
