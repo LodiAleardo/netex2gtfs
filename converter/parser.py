@@ -179,6 +179,28 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
         if ssp_ref is not None and sp_ref is not None:
             ssp_to_stop[ssp_ref.get("ref")] = sp_ref.get("ref")
 
+    # IT-ITC4-APAM: no PassengerStopAssignment — ScheduledStopPoint carries coordinates
+    # directly and is referenced by stop_times. Add unmapped SSPs as stops.
+    for ssp in root.iter(_t("ScheduledStopPoint")):
+        ssp_id = ssp.get("id")
+        if ssp_id in ssp_to_stop:
+            continue
+        loc = ssp.find(_t("Location"))
+        if loc is None:
+            continue
+        lat_el = loc.find(_t("Latitude"))
+        lon_el = loc.find(_t("Longitude"))
+        if lat_el is None or lon_el is None:
+            continue
+        stops.append(
+            {
+                "stop_id": ssp_id,
+                "stop_name": _txt(ssp, "Name"),
+                "stop_lat": lat_el.text.strip(),
+                "stop_lon": lon_el.text.strip(),
+            }
+        )
+
     return stops, ssp_to_stop
 
 
