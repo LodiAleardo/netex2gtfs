@@ -18,6 +18,8 @@ _FEED_INFO_FIELDS = [
     "feed_publisher_name", "feed_publisher_url", "feed_lang",
     "feed_start_date", "feed_end_date", "feed_version",
     "feed_contact_email", "feed_contact_url"]
+_AREAS_FIELDS = ["area_id", "area_name"]
+_STOP_AREAS_FIELDS = ["stop_id", "area_id"]
 
 
 def _csv_bytes(fields: list[str], rows: list[dict]) -> bytes:
@@ -55,6 +57,11 @@ def write(data: dict, output_path: Path) -> None:
         "calendar_dates.txt": (_CALENDAR_DATES_FIELDS, _calendar_dates_rows(data["service_dates"])),
         "feed_info.txt": (_FEED_INFO_FIELDS, data["feed_info"]),
     }
+
+    if data.get("areas"):
+        files["areas.txt"] = (_AREAS_FIELDS, data["areas"])
+    if data.get("stop_areas"):
+        files["stop_areas.txt"] = (_STOP_AREAS_FIELDS, data["stop_areas"])
 
     with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for filename, (fields, rows) in files.items():

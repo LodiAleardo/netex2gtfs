@@ -26,6 +26,10 @@ TRANSPORT_TYPE = {
     "bus": 3,
     "coach": 3,
     "ferry": 4,
+    "water": 4,
+    "cableway": 6,
+    "lift": 6,
+    "funicular": 7,
 }
 
 log = logging.getLogger(__name__)
@@ -61,16 +65,57 @@ def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
     patterns, spijp_to_ssp, pattern_to_line = _parse_journey_patterns(root)
     trips, stop_times = _parse_timetable(root, patterns, pattern_to_line, ssp_to_stop)
 
+    # Drop trips whose service has no active dates and stop_times referencing unknown stops.
+    valid_services = {sid for sid, dates in service_dates.items() if dates}
+    trips = [t for t in trips if t["service_id"] in valid_services]
+
+    # Deduplicate trips by trip_id (NeTEx may repeat the same id with different versions).
+    trips_by_id: dict[str, dict] = {}
+    for t in trips:
+        trips_by_id[t["trip_id"]] = t
+    trips = list(trips_by_id.values())
+
+    # Remap trip route_ids that reference a parent line not present in routes.
+    # Some producers (e.g. Tuscany) use FlexibleLineView to reference a logical
+    # parent ID (e.g. "Line:foo") while only variant routes exist (e.g. "Line:foo_3@V1").
+    valid_route_ids = {r["route_id"] for r in routes}
+    missing_ids = {t["route_id"] for t in trips if t["route_id"] not in valid_route_ids}
+    if missing_ids:
+        prefix_map: dict[str, str] = {}
+        for mid in missing_ids:
+            for r in routes:
+                if r["route_id"].startswith(mid):
+                    prefix_map[mid] = r["route_id"]
+                    break
+        if prefix_map:
+            trips = [
+                {**t, "route_id": prefix_map[t["route_id"]]}
+                if t["route_id"] in prefix_map else t
+                for t in trips
+            ]
+
+    valid_trip_ids = {t["trip_id"] for t in trips}
+    valid_stop_ids = {s["stop_id"] for s in stops}
+    stop_times = [
+        st for st in stop_times
+        if st["trip_id"] in valid_trip_ids and st["stop_id"] in valid_stop_ids
+    ]
+
+    # Deduplicate stop_times by (trip_id, stop_sequence) — last version wins,
+    # consistent with trip/route deduplication above.
+    st_by_key: dict[tuple, dict] = {}
+    for st in stop_times:
+        st_by_key[(st["trip_id"], st["stop_sequence"])] = st
+    stop_times = list(st_by_key.values())
+
     feed_info = _parse_feed_info(root, agencies, service_dates)
+    fares = _parse_fares(root, ssp_to_stop)
+    fares["stop_areas"] = [sa for sa in fares["stop_areas"] if sa["stop_id"] in valid_stop_ids]
 
     log.info(
-        "Parsed: %d agencies, %d stops, %d routes, %d services, %d trips, %d stop_times",
-        len(agencies),
-        len(stops),
-        len(routes),
-        len(service_dates),
-        len(trips),
-        len(stop_times),
+        "Parsed: %d agencies, %d stops, %d routes, %d services, %d trips, %d stop_times, %d areas, %d stop_areas",
+        len(agencies), len(stops), len(routes), len(service_dates),
+        len(trips), len(stop_times), len(fares["areas"]), len(fares["stop_areas"]),
     )
     return {
         "agency": agencies,
@@ -80,6 +125,8 @@ def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
         "trips": trips,
         "stop_times": stop_times,
         "feed_info": feed_info,
+        "areas": fares["areas"],
+        "stop_areas": fares["stop_areas"],
     }
 
 
@@ -117,6 +164,47 @@ def _parse_feed_info(root, agencies: list[dict], service_dates: dict[str, list[s
 # Agency
 # ---------------------------------------------------------------------------
 
+_PHONE_SENTINELS = {"none", "n/a", "na", "nd", "-"}
+
+
+def _clean_phone(phone: str) -> str:
+    if not phone:
+        return phone
+    if phone.strip().lower() in _PHONE_SENTINELS:
+        return ""
+    if not re.search(r"\d", phone):
+        return ""
+    # Strip trailing free-text annotation after " - " (e.g. "- WhatsApp")
+    phone = re.sub(r"\s*-\s*[A-Za-z].*$", "", phone).strip()
+    # Drop a second number appended with "-" only when the prefix is already a
+    # complete number (≥8 digits). e.g. "+39 0873 378788-391168" → "+39 0873 378788"
+    # but leave "0331-707700" (Italian area-code + number) untouched.
+    m = re.search(r"-\d{6,}$", phone)
+    if m:
+        prefix = phone[:m.start()]
+        if len(re.sub(r"\D", "", prefix)) >= 8:
+            phone = prefix.strip()
+    # Convert (CC) country-code prefix to +CC (e.g. "(39) 351…" → "+39 351…")
+    phone = re.sub(r"^\((\d+)\)\s*", r"+\1 ", phone)
+    return phone
+
+
+def _normalize_url(url: str) -> str:
+    if not url:
+        return url
+    url = re.sub(r"^(https?):\\\\", r"\1://", url)
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    # Reject URLs whose host part has no dot (e.g. "https://n/a")
+    try:
+        from urllib.parse import urlparse
+        if "." not in (urlparse(url).netloc or ""):
+            return ""
+    except Exception:
+        return ""
+    return url
+
+
 def _parse_agencies(root) -> list[dict]:
     agencies = []
     for op in root.iter(_t("Operator")):
@@ -127,12 +215,22 @@ def _parse_agencies(root) -> list[dict]:
             {
                 "agency_id": op.get("id"),
                 "agency_name": _txt(op, "Name"),
-                "agency_url": url or "https://www.atv.verona.it",
+                "agency_url": _normalize_url(url),
                 "agency_timezone": "Europe/Rome",
                 "agency_lang": "it",
-                "agency_phone": phone,
+                "agency_phone": _clean_phone(phone),
             }
         )
+    # Fill missing URLs: prefer the first valid URL found in this feed so that
+    # multi-agency feeds share a contextually relevant URL. When no agency in the
+    # feed has a URL at all, fall back to the Italian transport ministry portal.
+    feed_url = next(
+        (a["agency_url"] for a in agencies if a["agency_url"]),
+        "https://www.mit.gov.it/",
+    )
+    for a in agencies:
+        if not a["agency_url"]:
+            a["agency_url"] = feed_url
     return agencies
 
 
@@ -209,21 +307,20 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 def _parse_routes(root) -> list[dict]:
-    routes = []
+    # NeTEx allows multiple versions of the same element — keep the last (highest version).
+    routes_by_id: dict[str, dict] = {}
     for line in root.iter(_t("Line")):
         op_ref = line.find(_t("OperatorRef"))
-        mode = _txt(line, "TransportMode", "bus").lower()
-        routes.append(
-            {
-                "route_id": line.get("id"),
-                "agency_id": op_ref.get("ref") if op_ref is not None else "",
-                "route_short_name": _txt(line, "ShortName") or _txt(line, "PublicCode"),
-                "route_long_name": _txt(line, "Name"),
-                "route_type": str(TRANSPORT_TYPE.get(mode, 3)),
-                "route_desc": _txt(line, "Description"),
-            }
-        )
-    return routes
+        mode = _txt(line, "TransportMode", "bus").strip().lower()
+        routes_by_id[line.get("id")] = {
+            "route_id": line.get("id"),
+            "agency_id": op_ref.get("ref") if op_ref is not None else "",
+            "route_short_name": _txt(line, "ShortName") or _txt(line, "PublicCode"),
+            "route_long_name": _txt(line, "Name"),
+            "route_type": str(TRANSPORT_TYPE.get(mode, 3)),
+            "route_desc": _txt(line, "Description"),
+        }
+    return list(routes_by_id.values())
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +510,9 @@ def _parse_timetable(
         dt_ref_el = sj.find(f".//{_t('DayTypeRef')}")
         service_id = dt_ref_el.get("ref") if dt_ref_el is not None else ""
 
+        if not route_id:
+            continue
+
         trips.append(
             {
                 "route_id": route_id,
@@ -424,6 +524,7 @@ def _parse_timetable(
 
         # passing times indexed by StopPointInJourneyPattern ref
         # ArrivalDayOffset / DepartureDayOffset (NeTEx) encode post-midnight times explicitly
+        # Times may include a timezone offset (e.g. "06:21:00+01:00") — strip to HH:MM:SS.
         pt_map: dict[str, dict] = {}
         pt_container = sj.find(_t("passingTimes"))
         if pt_container is not None:
@@ -431,8 +532,8 @@ def _parse_timetable(
                 spijp_ref_el = pt.find(_t("StopPointInJourneyPatternRef"))
                 if spijp_ref_el is None:
                     continue
-                arr_time = _txt(pt, "ArrivalTime")
-                dep_time = _txt(pt, "DepartureTime")
+                arr_time = _txt(pt, "ArrivalTime")[:8]
+                dep_time = _txt(pt, "DepartureTime")[:8]
                 arr_offset = int(_txt(pt, "ArrivalDayOffset") or "0")
                 dep_offset = int(_txt(pt, "DepartureDayOffset") or "0")
                 if arr_time and arr_offset:
@@ -455,6 +556,8 @@ def _parse_timetable(
                 arrival = departure
             if not departure:
                 departure = arrival
+            if not arrival and not departure:
+                continue
 
             ssp_ref = point["ssp_ref"]
             stop_id = ssp_to_stop.get(ssp_ref, ssp_ref)
@@ -474,3 +577,39 @@ def _parse_timetable(
         stop_times.extend(_fix_midnight(trip_stop_times))
 
     return trips, stop_times
+
+
+# ---------------------------------------------------------------------------
+# Fares  (TariffZone → areas, SSP zone refs → stop_areas)
+# ---------------------------------------------------------------------------
+
+def _parse_fares(root, ssp_to_stop: dict[str, str]) -> dict:
+    areas = []
+    seen_areas: set[str] = set()
+    for tz in root.iter(_t("TariffZone")):
+        area_id = tz.get("id")
+        if not area_id or area_id in seen_areas:
+            continue
+        seen_areas.add(area_id)
+        name = _txt(tz, "Description") or _txt(tz, "Name") or area_id
+        areas.append({"area_id": area_id, "area_name": name})
+
+    stop_areas = []
+    seen_pairs: set[tuple[str, str]] = set()
+    for ssp in root.iter(_t("ScheduledStopPoint")):
+        ssp_id = ssp.get("id")
+        tz_el = ssp.find(_t("tariffZones"))
+        if tz_el is None:
+            continue
+        stop_id = ssp_to_stop.get(ssp_id, ssp_id)
+        for tzref in tz_el:
+            area_id = tzref.get("ref")
+            if not area_id:
+                continue
+            pair = (stop_id, area_id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            stop_areas.append({"stop_id": stop_id, "area_id": area_id})
+
+    return {"areas": areas, "stop_areas": stop_areas}
