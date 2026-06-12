@@ -862,6 +862,14 @@ def _parse_fares_v2(root, routes: list[dict], area_ids: set[str]) -> dict:
                 )
 
     if not fare_products:
+        # Some NAP exports (e.g. Campania UNICO products) list fare products without
+        # any price or sales offer; GTFS requires an amount, so nothing can be emitted.
+        if product_names:
+            log.warning(
+                "FareFrame lists %d fare products but none has a price "
+                "(no SalesOfferPackage/FareTable); skipping Fares v2 output",
+                len(product_names),
+            )
         return empty
 
     used_categories = {fp["rider_category_id"] for fp in fare_products if fp["rider_category_id"]}
