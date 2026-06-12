@@ -26,9 +26,16 @@ def main() -> None:
         logging.error("Input file not found: %s", args.input)
         sys.exit(1)
 
-    writer.write(
-        parser.parse(str(args.input), extend_calendar_weeks=args.extend_calendar_weeks),
-        args.output)
+    data = parser.parse(str(args.input), extend_calendar_weeks=args.extend_calendar_weeks)
+    if not data["trips"]:
+        logging.error(
+            "No scheduled service found in %s: the file has no usable ServiceJourneys. "
+            "Italian NAP exports for alternative modes (e.g. vehicle sharing) contain only "
+            "stop places and fares, which cannot be expressed as a GTFS static feed.",
+            args.input,
+        )
+        sys.exit(2)
+    writer.write(data, args.output)
 
 
 if __name__ == "__main__":

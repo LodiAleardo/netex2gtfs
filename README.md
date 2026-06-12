@@ -12,6 +12,9 @@ This tool bridges the two formats, with a **focus on Italian regional feeds** pu
 
 - Converts NeTEx XML to a valid GTFS static zip
 - Produces `agency.txt`, `stops.txt`, `routes.txt`, `trips.txt`, `stop_times.txt`, `calendar_dates.txt`, `feed_info.txt`
+- Full [GTFS-Fares v2](https://gtfs.org/community/extensions/fares-v2/) output from EPIP FareFrames
+  (Italian profile): `fare_products.txt`, `fare_media.txt`, `rider_categories.txt`,
+  `fare_leg_rules.txt`, `fare_transfer_rules.txt`, `networks.txt`, `route_networks.txt`
 - Outputs `areas.txt` and `stop_areas.txt` (GTFS-Fares v2) when tariff zone data is present
 - Handles timezone-aware NeTEx times, post-midnight times via day offsets, and ValidDayBits calendars
 - Maps NeTEx transport modes to GTFS route types including funicular, cableway, rail, ferry, and water
@@ -58,6 +61,17 @@ python validate.py
 
 Converts every `.xml` in `data/`, runs the GTFS validator against each output, and reports any ERROR-severity notices. Requires `gtfs-validator.jar` at `.cache/gtfs-validator.jar`.
 
+### Run the tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Unit tests run against a small NeTEx Italian-profile fixture in `tests/fixtures/`.
+An additional integration test runs automatically when a BUSITALIA NeTEx export
+(any file matching `*BUSITALIA*.xml`) is present in `data/`, and is skipped otherwise.
+
 ## Input data
 
 Place NeTEx XML files in the `data/` directory.
@@ -80,6 +94,26 @@ Files included depend on source data:
 | `feed_info.txt` | yes | |
 | `areas.txt` | no | TariffZone elements present |
 | `stop_areas.txt` | no | TariffZone assignments present |
+| `fare_products.txt` | no | FareFrame with priced SalesOfferPackages present |
+| `fare_media.txt` | no | DistributionChannels present (mapped to paper / mobile app) |
+| `rider_categories.txt` | no | UserProfiles referenced by fare products |
+| `fare_leg_rules.txt` | no | Flat single-ride products present (see note below) |
+| `fare_transfer_rules.txt` | no | Single-ride products with a time validity (e.g. 90 min) |
+| `networks.txt` / `route_networks.txt` | no | NeTEx Network present and fare leg rules produced |
+
+### Fares v2 notes
+
+Fares are read from the EPIP `FareFrame` following the NeTEx
+[Italian profile](https://github.com/5Tsrl/netex-italian-profile) reference chain
+(`SalesOfferPackage` → `FareTable` → `FareStructureElementPrice` → `FareStructureElement`).
+Known limitations, driven by what Italian feeds actually contain:
+
+- Distance-class tariffs (`GeographicalInterval` km bands) and multi-ride carnets are
+  exported as priced `fare_products.txt` entries but get no `fare_leg_rules.txt` rows:
+  GTFS has no distance-based pricing and a carnet price covers several rides.
+- Single-ride tickets with a time validity (e.g. valid 90 minutes) produce a
+  `fare_transfer_rules.txt` row allowing unlimited free transfers within that window.
+- `timeframes.txt` is not produced (no time-of-day fare variation in the source data).
 
 
 ## License

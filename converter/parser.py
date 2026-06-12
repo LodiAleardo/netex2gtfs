@@ -3,6 +3,7 @@ import logging
 import re
 import xml.etree.ElementTree as ElementTree
 from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Optional
 
 from converter.extender import extend_calendar
@@ -111,12 +112,22 @@ def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
     feed_info = _parse_feed_info(root, agencies, service_dates)
     fares = _parse_fares(root, ssp_to_stop)
     fares["stop_areas"] = [sa for sa in fares["stop_areas"] if sa["stop_id"] in valid_stop_ids]
+    area_ids = {a["area_id"] for a in fares["areas"]}
+    fares_v2 = _parse_fares_v2(root, routes, area_ids)
 
     log.info(
         "Parsed: %d agencies, %d stops, %d routes, %d services, %d trips, %d stop_times, %d areas, %d stop_areas",
         len(agencies), len(stops), len(routes), len(service_dates),
         len(trips), len(stop_times), len(fares["areas"]), len(fares["stop_areas"]),
     )
+    if fares_v2["fare_products"]:
+        log.info(
+            "Parsed fares v2: %d fare_products, %d fare_media, %d rider_categories, "
+            "%d fare_leg_rules, %d fare_transfer_rules, %d networks",
+            len(fares_v2["fare_products"]), len(fares_v2["fare_media"]),
+            len(fares_v2["rider_categories"]), len(fares_v2["fare_leg_rules"]),
+            len(fares_v2["fare_transfer_rules"]), len(fares_v2["networks"]),
+        )
     return {
         "agency": agencies,
         "stops": stops,
@@ -127,6 +138,7 @@ def parse(xml_path: str, extend_calendar_weeks: int = 0) -> dict:
         "feed_info": feed_info,
         "areas": fares["areas"],
         "stop_areas": fares["stop_areas"],
+        **fares_v2,
     }
 
 
@@ -613,3 +625,276 @@ def _parse_fares(root, ssp_to_stop: dict[str, str]) -> dict:
             stop_areas.append({"stop_id": stop_id, "area_id": area_id})
 
     return {"areas": areas, "stop_areas": stop_areas}
+
+
+# ---------------------------------------------------------------------------
+# Fares v2  (EPIP FareFrame → fare_products, fare_media, rider_categories,
+#            fare_leg_rules, fare_transfer_rules, networks, route_networks)
+#
+# Reference chain in the Italian profile:
+#   SalesOfferPackage > SalesOfferPackageElement holds FareProductRef + FareTableRef;
+#   FareTable > FareStructureElementPrice carries the Amount and points back to the
+#   Tariff's FareStructureElement, whose GenericParameterAssignment limitations carry
+#   UserProfileRef (rider category) and UsageValidityPeriodRef (single ride vs pass).
+# ---------------------------------------------------------------------------
+
+_DURATION_RE = re.compile(
+    r"^P(?:(?P<years>\d+)Y)?(?:(?P<months>\d+)M)?(?:(?P<days>\d+)D)?"
+    r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?$"
+)
+
+_FARE_PRODUCT_TAGS = ("PreassignedFareProduct", "AmountOfPriceUnitProduct")
+
+# fare_media_type: 1 = physical paper ticket, 4 = mobile app
+_MEDIA_DEFS = {
+    "paper": {"fare_media_id": "paper", "fare_media_name": "Paper ticket", "fare_media_type": "1"},
+    "app": {"fare_media_id": "app", "fare_media_name": "Mobile app", "fare_media_type": "4"},
+}
+_APP_CHANNEL_KEYWORDS = ("app", "online", "telephone", "mobile")
+
+
+def _duration_seconds(duration: str) -> Optional[int]:
+    """ISO-8601 duration → seconds; None for calendar-dependent (years/months) or unparsable values."""
+    if not duration:
+        return None
+    m = _DURATION_RE.match(duration.strip())
+    if m is None:
+        return None
+    parts = {k: v for k, v in m.groupdict().items() if v is not None}
+    if not parts:
+        return None
+    if int(parts.get("years", 0)) or int(parts.get("months", 0)):
+        return None
+    return (
+        int(parts.get("days", 0)) * 86400
+        + int(parts.get("hours", 0)) * 3600
+        + int(parts.get("minutes", 0)) * 60
+        + int(float(parts.get("seconds", 0)))
+    )
+
+
+def _round_amount(amount: str) -> Optional[str]:
+    """Normalise a NeTEx price (e.g. "4.6000000000000005") to 2 decimals."""
+    try:
+        return str(Decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _ref(el, tag: str) -> str:
+    child = el.find(_t(tag))
+    return child.get("ref", "") if child is not None else ""
+
+
+def _parse_fares_v2(root, routes: list[dict], area_ids: set[str]) -> dict:
+    empty = {
+        "fare_media": [], "fare_products": [], "rider_categories": [],
+        "fare_leg_rules": [], "fare_transfer_rules": [],
+        "networks": [], "route_networks": [],
+    }
+
+    # Currency from FareFrame FrameDefaults
+    currency = "EUR"
+    for ff in root.iter(_t("FareFrame")):
+        defaults = ff.find(_t("FrameDefaults"))
+        if defaults is not None and _txt(defaults, "DefaultCurrency"):
+            currency = _txt(defaults, "DefaultCurrency")
+        break
+
+    # UsageValidityPeriod id → (type, seconds)
+    validity_periods: dict[str, dict] = {}
+    for uvp in root.iter(_t("UsageValidityPeriod")):
+        validity_periods[uvp.get("id")] = {
+            "type": _txt(uvp, "ValidityPeriodType"),
+            "seconds": _duration_seconds(_txt(uvp, "StandardDuration")),
+        }
+
+    # UserProfile → rider_categories
+    rider_categories = []
+    for up in root.iter(_t("UserProfile")):
+        up_id = up.get("id")
+        name = _txt(up, "Name") or _txt(up, "UserType") or up_id.split(":")[-1]
+        rider_categories.append(
+            {
+                "rider_category_id": up_id,
+                "rider_category_name": name,
+                "is_default_fare_category": "0",
+            }
+        )
+
+    # FareStructureElement id → rider category / validity period / distance-class flag
+    fse_info: dict[str, dict] = {}
+    for fse in root.iter(_t("FareStructureElement")):
+        info = {"user_profile": "", "validity_period": "", "has_geo": fse.find(_t("geographicalIntervals")) is not None}
+        for lim in fse.iter(_t("limitations")):
+            info["user_profile"] = info["user_profile"] or _ref(lim, "UserProfileRef")
+            info["validity_period"] = info["validity_period"] or _ref(lim, "UsageValidityPeriodRef")
+        # Zone-scoped tariffs (other Italian feeds): TariffZoneRef/FareZoneRef in validityParameters
+        zones = []
+        for vp in fse.iter(_t("validityParameters")):
+            for tag in ("TariffZoneRef", "FareZoneRef"):
+                zones.extend(z.get("ref") for z in vp.iter(_t(tag)) if z.get("ref"))
+        info["zones"] = [z for z in zones if z in area_ids]
+        fse_info[fse.get("id")] = info
+
+    # FareTable id → list of (FareStructureElementRef, Amount)
+    fare_tables: dict[str, list[tuple[str, str]]] = {}
+    for ft in root.iter(_t("FareTable")):
+        prices = []
+        for price in ft.iter(_t("FareStructureElementPrice")):
+            amount = _txt(price, "Amount")
+            if amount:
+                prices.append((_ref(price, "FareStructureElementRef"), amount))
+        fare_tables[ft.get("id")] = prices
+
+    # Fare product id → name; multi-ride bundles are excluded from leg rules below
+    # because their price covers several rides, not one leg. AmountOfPriceUnitProduct
+    # is the structural marker, but Italian producers also model carnets as
+    # PreassignedFareProduct with only the name ("CARNET ...") telling them apart.
+    product_names: dict[str, str] = {}
+    bundle_products: set[str] = set()
+    for tag in _FARE_PRODUCT_TAGS:
+        for fp in root.iter(_t(tag)):
+            fp_id = fp.get("id")
+            product_names[fp_id] = _txt(fp, "Name")
+            if tag == "AmountOfPriceUnitProduct" or "carnet" in product_names[fp_id].lower():
+                bundle_products.add(fp_id)
+
+    # DistributionChannel id → media key ("app" / "paper")
+    channel_media: dict[str, str] = {}
+    for dc in root.iter(_t("DistributionChannel")):
+        text = (dc.get("id", "") + _txt(dc, "Name")).lower()
+        channel_media[dc.get("id")] = (
+            "app" if any(k in text for k in _APP_CHANNEL_KEYWORDS) else "paper"
+        )
+
+    # SalesOfferPackage: tie product ↔ price ↔ media, derive leg/transfer rules
+    fare_products: list[dict] = []
+    fare_leg_rules: list[dict] = []
+    fare_transfer_rules: list[dict] = []
+    used_media: set[str] = set()
+    seen_products: set[tuple] = set()
+    seen_leg_groups: set[str] = set()
+
+    for sop in root.iter(_t("SalesOfferPackage")):
+        media_ids = sorted(
+            {
+                channel_media[ref]
+                for da in sop.iter(_t("DistributionAssignment"))
+                if (ref := _ref(da, "DistributionChannelRef")) in channel_media
+            }
+        ) or [""]
+
+        for el in sop.iter(_t("SalesOfferPackageElement")):
+            product_id = _ref(el, "FareProductRef")
+            if not product_id:
+                continue
+
+            # First resolvable price among the element's fare tables
+            fse_ref, amount = "", None
+            tables_el = el.find(_t("fareTables"))
+            table_refs = (
+                [t.get("ref") for t in tables_el.iter(_t("FareTableRef"))]
+                if tables_el is not None else []
+            )
+            for table_ref in table_refs:
+                for ref, raw_amount in fare_tables.get(table_ref, []):
+                    rounded = _round_amount(raw_amount)
+                    if rounded is not None:
+                        fse_ref, amount = ref, rounded
+                        break
+                if amount is not None:
+                    break
+            if amount is None:
+                log.warning("Fare product %s has no resolvable price, skipping", product_id)
+                continue
+
+            info = fse_info.get(fse_ref, {})
+            rider_category = info.get("user_profile", "")
+            for media_id in media_ids:
+                key = (product_id, rider_category, media_id)
+                if key in seen_products:
+                    continue
+                seen_products.add(key)
+                if media_id:
+                    used_media.add(media_id)
+                fare_products.append(
+                    {
+                        "fare_product_id": product_id,
+                        "fare_product_name": product_names.get(product_id, ""),
+                        "rider_category_id": rider_category,
+                        "fare_media_id": media_id,
+                        "amount": amount,
+                        "currency": currency,
+                    }
+                )
+
+            # Leg rules only for flat single-ride tickets: distance-class fares
+            # (geographical intervals) cannot be priced without OD areas in GTFS.
+            validity = validity_periods.get(info.get("validity_period", ""), {})
+            if validity.get("type") != "singleRide" or info.get("has_geo") or product_id in bundle_products:
+                continue
+            if product_id in seen_leg_groups:
+                continue
+            seen_leg_groups.add(product_id)
+
+            zones = info.get("zones") or [""]
+            for zone in zones:
+                fare_leg_rules.append(
+                    {
+                        "leg_group_id": product_id,
+                        "network_id": "",  # filled below once the Network is known
+                        "from_area_id": zone,
+                        "to_area_id": zone,
+                        "fare_product_id": product_id,
+                    }
+                )
+            if validity.get("seconds"):
+                fare_transfer_rules.append(
+                    {
+                        "from_leg_group_id": product_id,
+                        "to_leg_group_id": product_id,
+                        "transfer_count": "-1",
+                        "duration_limit": str(validity["seconds"]),
+                        "duration_limit_type": "1",  # departure to departure
+                        "fare_transfer_type": "0",  # from-leg cost + free transfer (A + AB)
+                    }
+                )
+
+    if not fare_products:
+        # Some NAP exports (e.g. Campania UNICO products) list fare products without
+        # any price or sales offer; GTFS requires an amount, so nothing can be emitted.
+        if product_names:
+            log.warning(
+                "FareFrame lists %d fare products but none has a price "
+                "(no SalesOfferPackage/FareTable); skipping Fares v2 output",
+                len(product_names),
+            )
+        return empty
+
+    used_categories = {fp["rider_category_id"] for fp in fare_products if fp["rider_category_id"]}
+    rider_categories = [rc for rc in rider_categories if rc["rider_category_id"] in used_categories]
+
+    # Scope leg rules to the feed's Network when one exists; networks.txt and
+    # route_networks.txt are only needed when leg rules reference a network.
+    networks: list[dict] = []
+    route_networks: list[dict] = []
+    network_el = next(root.iter(_t("Network")), None)
+    if network_el is not None and fare_leg_rules:
+        network_id = network_el.get("id")
+        networks.append({"network_id": network_id, "network_name": _txt(network_el, "Name")})
+        route_networks = [
+            {"network_id": network_id, "route_id": r["route_id"]} for r in routes
+        ]
+        for rule in fare_leg_rules:
+            rule["network_id"] = network_id
+
+    return {
+        "fare_media": [_MEDIA_DEFS[m] for m in sorted(used_media)],
+        "fare_products": fare_products,
+        "rider_categories": rider_categories,
+        "fare_leg_rules": fare_leg_rules,
+        "fare_transfer_rules": fare_transfer_rules,
+        "networks": networks,
+        "route_networks": route_networks,
+    }
