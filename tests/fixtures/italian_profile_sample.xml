@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PublicationDelivery xmlns="http://www.netex.org.uk/netex" xmlns:gml="http://www.opengis.net/gml/3.2">
+    <PublicationTimestamp>2026-06-11T11:41:37.000+02:00</PublicationTimestamp>
+    <ParticipantRef>RAPVeneto</ParticipantRef>
+    <Description>NeTEx Italian profile sample for tests (trimmed from BUSITALIA ITH3 export)</Description>
+    <dataObjects>
+        <CompositeFrame id="epd:IT:TEST:CompositeFrame-EU_PI_LINE_OFFER:SAMPLE" version="1">
+            <ValidBetween>
+                <FromDate>2026-06-01T00:00:00.000+02:00</FromDate>
+                <ToDate>2026-06-14T23:59:59.000+02:00</ToDate>
+            </ValidBetween>
+            <TypeOfFrameRef versionRef="1" ref="epip:EU_PI_LINE_OFFER"/>
+            <FrameDefaults>
+                <DefaultLocale>
+                    <TimeZone>Europe/Rome</TimeZone>
+                </DefaultLocale>
+            </FrameDefaults>
+            <frames>
+                <TimetableFrame id="epd:IT:TEST:TimetableFrame-EU_PI_TIMETABLE:ita" version="1">
+                    <TypeOfFrameRef versionRef="any" ref="epip:EU_PI_TIMETABLE_SAMPLE"/>
+                    <vehicleJourneys>
+                        <ServiceJourney id="IT:TEST:ServiceJourney:1" version="1">
+                            <Name>S00001 - S00003</Name>
+                            <TransportMode>bus</TransportMode>
+                            <DepartureTime>08:00:00</DepartureTime>
+                            <dayTypes>
+                                <DayTypeRef ref="IT:TEST:DayType:1"/>
+                            </dayTypes>
+                            <ServiceJourneyPatternRef version="1" ref="IT:TEST:ServiceJourneyPattern:1"/>
+                            <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                            <FlexibleLineView>
+                                <LineRef version="1" ref="IT:TEST:Line:1"/>
+                            </FlexibleLineView>
+                            <passingTimes>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:1_1" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_0"/>
+                                    <DepartureTime>08:00:00</DepartureTime>
+                                </TimetabledPassingTime>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:1_2" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_1"/>
+                                    <ArrivalTime>08:10:00</ArrivalTime>
+                                    <DepartureTime>08:11:00</DepartureTime>
+                                </TimetabledPassingTime>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:1_3" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_2"/>
+                                    <ArrivalTime>08:20:00</ArrivalTime>
+                                </TimetabledPassingTime>
+                            </passingTimes>
+                        </ServiceJourney>
+                        <ServiceJourney id="IT:TEST:ServiceJourney:2" version="1">
+                            <Name>S00001 - S00003</Name>
+                            <TransportMode>bus</TransportMode>
+                            <DepartureTime>09:00:00</DepartureTime>
+                            <dayTypes>
+                                <DayTypeRef ref="IT:TEST:DayType:1"/>
+                            </dayTypes>
+                            <ServiceJourneyPatternRef version="1" ref="IT:TEST:ServiceJourneyPattern:1"/>
+                            <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                            <FlexibleLineView>
+                                <LineRef version="1" ref="IT:TEST:Line:1"/>
+                            </FlexibleLineView>
+                            <passingTimes>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:2_1" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_0"/>
+                                    <DepartureTime>09:00:00</DepartureTime>
+                                </TimetabledPassingTime>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:2_2" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_1"/>
+                                    <ArrivalTime>09:10:00</ArrivalTime>
+                                    <DepartureTime>09:11:00</DepartureTime>
+                                </TimetabledPassingTime>
+                                <TimetabledPassingTime id="IT:TEST:TimetabledPassingTime:2_3" version="1">
+                                    <StopPointInJourneyPatternRef version="1" ref="IT:TEST:StopPointInJourneyPattern:1_2"/>
+                                    <ArrivalTime>09:20:00</ArrivalTime>
+                                </TimetabledPassingTime>
+                            </passingTimes>
+                        </ServiceJourney>
+                    </vehicleJourneys>
+                </TimetableFrame>
+                <ServiceFrame id="epd:IT:TEST:ServiceFrame-EU_PI_NETWORK:ita" version="1">
+                    <TypeOfFrameRef versionRef="any" ref="epip:EU_PI_NETWORK"/>
+                    <Network id="IT:TEST:NV:SAMPLE" version="1">
+                        <Name>Rete TPL SAMPLE</Name>
+                        <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE">IT:TEST:Operator:SAMPLE</OperatorRef>
+                    </Network>
+                    <lines>
+                        <Line id="IT:TEST:Line:1" version="1">
+                            <Name>CITTA-PERIFERIA</Name>
+                            <ShortName>L1</ShortName>
+                            <Description>CITTA-PERIFERIA</Description>
+                            <TransportMode>bus</TransportMode>
+                            <PublicCode>1</PublicCode>
+                            <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                        </Line>
+                    </lines>
+                    <scheduledStopPoints>
+                        <ScheduledStopPoint id="IT:TEST:ScheduledStopPoint:1" version="1">
+                            <Name>S00001</Name>
+                        </ScheduledStopPoint>
+                        <ScheduledStopPoint id="IT:TEST:ScheduledStopPoint:2" version="1">
+                            <Name>S00002</Name>
+                        </ScheduledStopPoint>
+                        <ScheduledStopPoint id="IT:TEST:ScheduledStopPoint:3" version="1">
+                            <Name>S00003</Name>
+                        </ScheduledStopPoint>
+                    </scheduledStopPoints>
+                    <stopAssignments>
+                        <PassengerStopAssignment order="1" id="IT:TEST:PassengerStopAssignment:1" version="1">
+                            <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:1"/>
+                            <StopPlaceRef version="1" ref="IT:TEST:StopPlace:1"/>
+                        </PassengerStopAssignment>
+                        <PassengerStopAssignment order="2" id="IT:TEST:PassengerStopAssignment:2" version="1">
+                            <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:2"/>
+                            <StopPlaceRef version="1" ref="IT:TEST:StopPlace:2"/>
+                        </PassengerStopAssignment>
+                        <PassengerStopAssignment order="3" id="IT:TEST:PassengerStopAssignment:3" version="1">
+                            <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:3"/>
+                            <StopPlaceRef version="1" ref="IT:TEST:StopPlace:3"/>
+                        </PassengerStopAssignment>
+                    </stopAssignments>
+                    <journeyPatterns>
+                        <ServiceJourneyPattern id="IT:TEST:ServiceJourneyPattern:1" version="1">
+                            <Name>Citta - Periferia</Name>
+                            <RouteView>
+                                <VehicleMode>bus</VehicleMode>
+                                <LineRef version="1" ref="IT:TEST:Line:1"/>
+                            </RouteView>
+                            <pointsInSequence>
+                                <StopPointInJourneyPattern order="1" id="IT:TEST:StopPointInJourneyPattern:1_0" version="1">
+                                    <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:1"/>
+                                    <ForAlighting>false</ForAlighting>
+                                    <ForBoarding>true</ForBoarding>
+                                </StopPointInJourneyPattern>
+                                <StopPointInJourneyPattern order="2" id="IT:TEST:StopPointInJourneyPattern:1_1" version="1">
+                                    <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:2"/>
+                                </StopPointInJourneyPattern>
+                                <StopPointInJourneyPattern order="3" id="IT:TEST:StopPointInJourneyPattern:1_2" version="1">
+                                    <ScheduledStopPointRef version="1" ref="IT:TEST:ScheduledStopPoint:3"/>
+                                    <ForAlighting>true</ForAlighting>
+                                    <ForBoarding>false</ForBoarding>
+                                </StopPointInJourneyPattern>
+                            </pointsInSequence>
+                        </ServiceJourneyPattern>
+                    </journeyPatterns>
+                </ServiceFrame>
+                <ServiceCalendarFrame id="epd:IT:TEST:ServiceCalendarFrame-EU_PI_CALENDAR:ita" version="1">
+                    <TypeOfFrameRef versionRef="any" ref="epip:EU_PI_CALENDAR"/>
+                    <ServiceCalendar id="IT:TEST:ServiceCalendar:SAMPLE" version="1">
+                        <Name>Calendario orario SAMPLE</Name>
+                        <FromDate>2026-06-01+02:00</FromDate>
+                        <ToDate>2026-06-14+02:00</ToDate>
+                        <dayTypes>
+                            <DayType id="IT:TEST:DayType:1" version="1">
+                                <Name>Feriale</Name>
+                                <properties>
+                                    <PropertyOfDay>
+                                        <DaysOfWeek>Monday Tuesday Wednesday Thursday Friday</DaysOfWeek>
+                                    </PropertyOfDay>
+                                </properties>
+                            </DayType>
+                        </dayTypes>
+                        <operatingPeriods>
+                            <UicOperatingPeriod id="IT:TEST:UicOperatingPeriod:1" version="1">
+                                <FromDate>2026-06-01T00:00:00</FromDate>
+                                <ToDate>2026-06-14T00:00:00</ToDate>
+                                <ValidDayBits>11111001111100</ValidDayBits>
+                            </UicOperatingPeriod>
+                        </operatingPeriods>
+                        <dayTypeAssignments>
+                            <DayTypeAssignment order="1" id="IT:TEST:DayTypeAssignment:1" version="1">
+                                <OperatingPeriodRef version="1" ref="IT:TEST:UicOperatingPeriod:1"/>
+                                <DayTypeRef ref="IT:TEST:DayType:1"/>
+                            </DayTypeAssignment>
+                        </dayTypeAssignments>
+                    </ServiceCalendar>
+                </ServiceCalendarFrame>
+                <ResourceFrame id="epd:IT:TEST:ResourceFrame-EU_PI_COMMON:ita" version="1">
+                    <TypeOfFrameRef versionRef="any" ref="epip:EU_PI_COMMON"/>
+                    <organisations>
+                        <Operator id="IT:TEST:Operator:SAMPLE" version="1">
+                            <Name>SAMPLE BUS</Name>
+                            <ShortName>SAMPLE</ShortName>
+                            <ContactDetails>
+                                <Phone>0491234567</Phone>
+                                <Url>https://www.samplebus.it</Url>
+                            </ContactDetails>
+                            <OrganisationType>operator</OrganisationType>
+                        </Operator>
+                    </organisations>
+                </ResourceFrame>
+                <SiteFrame id="epd:IT:TEST:SiteFrame-EU_PI_STOP:ita" version="1">
+                    <TypeOfFrameRef versionRef="any" ref="epip:EU_PI_STOP"/>
+                    <stopPlaces>
+                        <StopPlace id="IT:TEST:StopPlace:1" version="1">
+                            <Name>S00001</Name>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>11.90224</Longitude>
+                                    <Latitude>45.47680</Latitude>
+                                </Location>
+                            </Centroid>
+                            <TransportMode>bus</TransportMode>
+                            <StopPlaceType>onstreetBus</StopPlaceType>
+                        </StopPlace>
+                        <StopPlace id="IT:TEST:StopPlace:2" version="1">
+                            <Name>S00002</Name>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>11.78425</Longitude>
+                                    <Latitude>45.38552</Latitude>
+                                </Location>
+                            </Centroid>
+                            <TransportMode>bus</TransportMode>
+                            <StopPlaceType>onstreetBus</StopPlaceType>
+                        </StopPlace>
+                        <StopPlace id="IT:TEST:StopPlace:3" version="1">
+                            <Name>S00003</Name>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>11.91606</Longitude>
+                                    <Latitude>45.37232</Latitude>
+                                </Location>
+                            </Centroid>
+                            <TransportMode>bus</TransportMode>
+                            <StopPlaceType>onstreetBus</StopPlaceType>
+                        </StopPlace>
+                    </stopPlaces>
+                </SiteFrame>
+                <FareFrame id="epd:IT:TEST:FareFrame-EU_PI_FARE:ita" version="1">
+                    <FrameDefaults>
+                        <DefaultCurrency>EUR</DefaultCurrency>
+                    </FrameDefaults>
+                    <geographicalUnits>
+                        <GeographicalUnit id="IT:TEST:GeographicalUnit:km" version="1">
+                            <Name>Unità geografica di 1Km</Name>
+                            <Distance>1000</Distance>
+                        </GeographicalUnit>
+                    </geographicalUnits>
+                    <usageParameters>
+                        <UsageValidityPeriod id="IT:TEST:UsageValidityPeriod:single90min" version="1">
+                            <ValidityPeriodType>singleRide</ValidityPeriodType>
+                            <StandardDuration>PT90M</StandardDuration>
+                        </UsageValidityPeriod>
+                        <UsageValidityPeriod id="IT:TEST:UsageValidityPeriod:1month" version="1">
+                            <ValidityPeriodType>monthlyPass</ValidityPeriodType>
+                            <StandardDuration>P1M</StandardDuration>
+                        </UsageValidityPeriod>
+                        <UserProfile id="IT:TEST:UserProfile:student" version="1">
+                            <UserType>student</UserType>
+                        </UserProfile>
+                    </usageParameters>
+                    <tariffs>
+                        <Tariff id="IT:TEST:Tariff:BU01_BIGLIETTOURBANO" version="1">
+                            <fareStructureElements>
+                                <FareStructureElement id="IT:TEST:FareStructureElement:BU01_BIGLIETTOURBANO" version="1">
+                                    <fareStructureElementsInSequence>
+                                        <FareStructureElementInSequence id="IT:TEST:FareStructureElementInSequence:BU01" version="1">
+                                            <GenericParameterAssignment order="1" id="IT:TEST:GenericParameterAssignment:BU01" version="1">
+                                                <limitations>
+                                                    <UsageValidityPeriodRef version="1" ref="IT:TEST:UsageValidityPeriod:single90min"/>
+                                                </limitations>
+                                                <validityParameters>
+                                                    <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                                                </validityParameters>
+                                            </GenericParameterAssignment>
+                                        </FareStructureElementInSequence>
+                                    </fareStructureElementsInSequence>
+                                </FareStructureElement>
+                            </fareStructureElements>
+                        </Tariff>
+                        <Tariff id="IT:TEST:Tariff:AM01_ABBONAMENTOMENSILESTUDENTI" version="1">
+                            <fareStructureElements>
+                                <FareStructureElement id="IT:TEST:FareStructureElement:AM01_ABBONAMENTOMENSILESTUDENTI" version="1">
+                                    <fareStructureElementsInSequence>
+                                        <FareStructureElementInSequence id="IT:TEST:FareStructureElementInSequence:AM01" version="1">
+                                            <GenericParameterAssignment order="1" id="IT:TEST:GenericParameterAssignment:AM01" version="1">
+                                                <limitations>
+                                                    <UserProfileRef version="1" ref="IT:TEST:UserProfile:student"/>
+                                                    <UsageValidityPeriodRef version="1" ref="IT:TEST:UsageValidityPeriod:1month"/>
+                                                </limitations>
+                                                <validityParameters>
+                                                    <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                                                </validityParameters>
+                                            </GenericParameterAssignment>
+                                        </FareStructureElementInSequence>
+                                    </fareStructureElementsInSequence>
+                                </FareStructureElement>
+                            </fareStructureElements>
+                        </Tariff>
+                        <Tariff id="IT:TEST:Tariff:EF01_CORSASEMPLICECL.01" version="1">
+                            <geographicalIntervals>
+                                <GeographicalInterval id="IT:TEST:GeographicalInterval:EF01-0.0_5.0" version="1">
+                                    <StartGeographicalValue>0.0</StartGeographicalValue>
+                                    <EndGeographicalValue>5.0</EndGeographicalValue>
+                                    <GeographicalUnitRef version="1" ref="IT:TEST:GeographicalUnit:km"/>
+                                </GeographicalInterval>
+                            </geographicalIntervals>
+                            <fareStructureElements>
+                                <FareStructureElement id="IT:TEST:FareStructureElement:EF01_CORSASEMPLICECL.01" version="1">
+                                    <geographicalIntervals>
+                                        <GeographicalIntervalRef version="1" ref="IT:TEST:GeographicalInterval:EF01-0.0_5.0"/>
+                                    </geographicalIntervals>
+                                    <fareStructureElementsInSequence>
+                                        <FareStructureElementInSequence id="IT:TEST:FareStructureElementInSequence:EF01" version="1">
+                                            <GenericParameterAssignment order="1" id="IT:TEST:GenericParameterAssignment:EF01" version="1">
+                                                <limitations>
+                                                    <UsageValidityPeriodRef version="1" ref="IT:TEST:UsageValidityPeriod:single90min"/>
+                                                </limitations>
+                                                <validityParameters>
+                                                    <OperatorRef version="1" ref="IT:TEST:Operator:SAMPLE"/>
+                                                </validityParameters>
+                                            </GenericParameterAssignment>
+                                        </FareStructureElementInSequence>
+                                    </fareStructureElementsInSequence>
+                                </FareStructureElement>
+                            </fareStructureElements>
+                        </Tariff>
+                    </tariffs>
+                    <fareProducts>
+                        <PreassignedFareProduct id="IT:TEST:PreassignedFareProduct:BU01_BIGLIETTOURBANO" version="1">
+                            <Name>BU01_BIGLIETTO URBANO</Name>
+                            <Description>Biglietto urbano valido 90 minuti</Description>
+                        </PreassignedFareProduct>
+                        <PreassignedFareProduct id="IT:TEST:PreassignedFareProduct:AM01_ABBONAMENTOMENSILESTUDENTI" version="1">
+                            <Name>AM01_ABBONAMENTO MENSILE STUDENTI</Name>
+                            <Description>Abbonamento mensile riservato agli studenti</Description>
+                        </PreassignedFareProduct>
+                        <PreassignedFareProduct id="IT:TEST:PreassignedFareProduct:EF01_CORSASEMPLICECL.01" version="1">
+                            <Name>EF01_CORSA SEMPLICE CL.01</Name>
+                            <Description>Corsa semplice extraurbana 0-5 km</Description>
+                        </PreassignedFareProduct>
+                    </fareProducts>
+                    <fareTables>
+                        <FareTable id="IT:TEST:FareTable:BU01" version="1">
+                            <prices>
+                                <FareStructureElementPrice id="IT:TEST:FareStructureElementPrice:BU01" version="1">
+                                    <Name>Biglietto urbano valido 90 minuti</Name>
+                                    <Amount>1.7</Amount>
+                                    <FareStructureElementRef version="1" ref="IT:TEST:FareStructureElement:BU01_BIGLIETTOURBANO"/>
+                                </FareStructureElementPrice>
+                            </prices>
+                        </FareTable>
+                        <FareTable id="IT:TEST:FareTable:AM01" version="1">
+                            <prices>
+                                <FareStructureElementPrice id="IT:TEST:FareStructureElementPrice:AM01" version="1">
+                                    <Name>Abbonamento mensile riservato agli studenti</Name>
+                                    <Amount>34.600000000000001</Amount>
+                                    <FareStructureElementRef version="1" ref="IT:TEST:FareStructureElement:AM01_ABBONAMENTOMENSILESTUDENTI"/>
+                                </FareStructureElementPrice>
+                            </prices>
+                        </FareTable>
+                        <FareTable id="IT:TEST:FareTable:EF01" version="1">
+                            <prices>
+                                <FareStructureElementPrice id="IT:TEST:FareStructureElementPrice:EF01" version="1">
+                                    <Name>Corsa semplice extraurbana 0-5 km</Name>
+                                    <Amount>2.5</Amount>
+                                    <FareStructureElementRef version="1" ref="IT:TEST:FareStructureElement:EF01_CORSASEMPLICECL.01"/>
+                                </FareStructureElementPrice>
+                            </prices>
+                        </FareTable>
+                    </fareTables>
+                    <salesOfferPackages>
+                        <SalesOfferPackage id="IT:TEST:SalesOfferPackage:BU01" version="1">
+                            <distributionAssignments>
+                                <DistributionAssignment order="1" id="IT:TEST:DistributionAssignment:BU01:app" version="1">
+                                    <DistributionChannelRef version="1" ref="IT:TEST:DistributionChannel:telephoneAPP"/>
+                                </DistributionAssignment>
+                                <DistributionAssignment order="2" id="IT:TEST:DistributionAssignment:BU01:atStop" version="1">
+                                    <DistributionChannelRef version="1" ref="IT:TEST:DistributionChannel:atStop"/>
+                                </DistributionAssignment>
+                            </distributionAssignments>
+                            <salesOfferPackageElements>
+                                <SalesOfferPackageElement order="1" id="IT:TEST:SalesOfferPackageElement:BU01" version="1">
+                                    <fareTables>
+                                        <FareTableRef version="1" ref="IT:TEST:FareTable:BU01"/>
+                                    </fareTables>
+                                    <FareProductRef version="1" ref="IT:TEST:PreassignedFareProduct:BU01_BIGLIETTOURBANO"/>
+                                </SalesOfferPackageElement>
+                            </salesOfferPackageElements>
+                        </SalesOfferPackage>
+                        <SalesOfferPackage id="IT:TEST:SalesOfferPackage:AM01" version="1">
+                            <distributionAssignments>
+                                <DistributionAssignment order="1" id="IT:TEST:DistributionAssignment:AM01:online" version="1">
+                                    <DistributionChannelRef version="1" ref="IT:TEST:DistributionChannel:online"/>
+                                </DistributionAssignment>
+                            </distributionAssignments>
+                            <salesOfferPackageElements>
+                                <SalesOfferPackageElement order="1" id="IT:TEST:SalesOfferPackageElement:AM01" version="1">
+                                    <fareTables>
+                                        <FareTableRef version="1" ref="IT:TEST:FareTable:AM01"/>
+                                    </fareTables>
+                                    <FareProductRef version="1" ref="IT:TEST:PreassignedFareProduct:AM01_ABBONAMENTOMENSILESTUDENTI"/>
+                                </SalesOfferPackageElement>
+                            </salesOfferPackageElements>
+                        </SalesOfferPackage>
+                        <SalesOfferPackage id="IT:TEST:SalesOfferPackage:EF01" version="1">
+                            <distributionAssignments>
+                                <DistributionAssignment order="1" id="IT:TEST:DistributionAssignment:EF01:atStop" version="1">
+                                    <DistributionChannelRef version="1" ref="IT:TEST:DistributionChannel:atStop"/>
+                                </DistributionAssignment>
+                            </distributionAssignments>
+                            <salesOfferPackageElements>
+                                <SalesOfferPackageElement order="1" id="IT:TEST:SalesOfferPackageElement:EF01" version="1">
+                                    <fareTables>
+                                        <FareTableRef version="1" ref="IT:TEST:FareTable:EF01"/>
+                                    </fareTables>
+                                    <FareProductRef version="1" ref="IT:TEST:PreassignedFareProduct:EF01_CORSASEMPLICECL.01"/>
+                                </SalesOfferPackageElement>
+                            </salesOfferPackageElements>
+                        </SalesOfferPackage>
+                    </salesOfferPackages>
+                    <distributionChannels>
+                        <DistributionChannel id="IT:TEST:DistributionChannel:telephoneAPP" version="1">
+                            <Name>telephone (APP)</Name>
+                            <DistributionChannelType>agency</DistributionChannelType>
+                        </DistributionChannel>
+                        <DistributionChannel id="IT:TEST:DistributionChannel:atStop" version="1">
+                            <Name>atStop</Name>
+                            <DistributionChannelType>agency</DistributionChannelType>
+                        </DistributionChannel>
+                        <DistributionChannel id="IT:TEST:DistributionChannel:online" version="1">
+                            <Name>online</Name>
+                            <DistributionChannelType>agency</DistributionChannelType>
+                        </DistributionChannel>
+                    </distributionChannels>
+                </FareFrame>
+            </frames>
+        </CompositeFrame>
+    </dataObjects>
+</PublicationDelivery>

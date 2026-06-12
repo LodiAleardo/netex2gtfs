@@ -20,6 +20,30 @@ _FEED_INFO_FIELDS = [
     "feed_contact_email", "feed_contact_url"]
 _AREAS_FIELDS = ["area_id", "area_name"]
 _STOP_AREAS_FIELDS = ["stop_id", "area_id"]
+_FARE_MEDIA_FIELDS = ["fare_media_id", "fare_media_name", "fare_media_type"]
+_FARE_PRODUCTS_FIELDS = [
+    "fare_product_id", "fare_product_name", "rider_category_id",
+    "fare_media_id", "amount", "currency"]
+_RIDER_CATEGORIES_FIELDS = ["rider_category_id", "rider_category_name", "is_default_fare_category"]
+_FARE_LEG_RULES_FIELDS = ["leg_group_id", "network_id", "from_area_id", "to_area_id", "fare_product_id"]
+_FARE_TRANSFER_RULES_FIELDS = [
+    "from_leg_group_id", "to_leg_group_id", "transfer_count",
+    "duration_limit", "duration_limit_type", "fare_transfer_type"]
+_NETWORKS_FIELDS = ["network_id", "network_name"]
+_ROUTE_NETWORKS_FIELDS = ["network_id", "route_id"]
+
+# Optional Fares v2 files, written only when the parser produced rows for them.
+_OPTIONAL_FILES = {
+    "areas.txt": ("areas", _AREAS_FIELDS),
+    "stop_areas.txt": ("stop_areas", _STOP_AREAS_FIELDS),
+    "fare_media.txt": ("fare_media", _FARE_MEDIA_FIELDS),
+    "fare_products.txt": ("fare_products", _FARE_PRODUCTS_FIELDS),
+    "rider_categories.txt": ("rider_categories", _RIDER_CATEGORIES_FIELDS),
+    "fare_leg_rules.txt": ("fare_leg_rules", _FARE_LEG_RULES_FIELDS),
+    "fare_transfer_rules.txt": ("fare_transfer_rules", _FARE_TRANSFER_RULES_FIELDS),
+    "networks.txt": ("networks", _NETWORKS_FIELDS),
+    "route_networks.txt": ("route_networks", _ROUTE_NETWORKS_FIELDS),
+}
 
 
 def _csv_bytes(fields: list[str], rows: list[dict]) -> bytes:
@@ -58,10 +82,9 @@ def write(data: dict, output_path: Path) -> None:
         "feed_info.txt": (_FEED_INFO_FIELDS, data["feed_info"]),
     }
 
-    if data.get("areas"):
-        files["areas.txt"] = (_AREAS_FIELDS, data["areas"])
-    if data.get("stop_areas"):
-        files["stop_areas.txt"] = (_STOP_AREAS_FIELDS, data["stop_areas"])
+    for filename, (key, fields) in _OPTIONAL_FILES.items():
+        if data.get(key):
+            files[filename] = (fields, data[key])
 
     with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for filename, (fields, rows) in files.items():
