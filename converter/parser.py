@@ -259,6 +259,18 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
         lat_el = loc.find(_t("Latitude"))
         lon_el = loc.find(_t("Longitude"))
         if lat_el is None or lon_el is None:
+            pos_el = loc.find("{http://www.opengis.net/gml/3.2}pos")
+            if pos_el is not None and pos_el.text:
+                parts = pos_el.text.strip().split()
+                if len(parts) >= 2:
+                    stops.append(
+                        {
+                            "stop_id": sp.get("id"),
+                            "stop_name": _txt(sp, "Name"),
+                            "stop_lat": parts[0],
+                            "stop_lon": parts[1],
+                        }
+                    )
             continue
         stops.append(
             {
@@ -289,6 +301,18 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
         lat_el = loc.find(_t("Latitude"))
         lon_el = loc.find(_t("Longitude"))
         if lat_el is None or lon_el is None:
+            pos_el = loc.find("{http://www.opengis.net/gml/3.2}pos")
+            if pos_el is not None and pos_el.text:
+                parts = pos_el.text.strip().split()
+                if len(parts) >= 2:
+                    stops.append(
+                        {
+                            "stop_id": ssp_id,
+                            "stop_name": _txt(ssp, "Name"),
+                            "stop_lat": parts[0],
+                            "stop_lon": parts[1],
+                        }
+                    )
             continue
         stops.append(
             {
