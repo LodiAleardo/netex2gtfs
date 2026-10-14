@@ -238,6 +238,23 @@ def _parse_agencies(root) -> list[dict]:
 # Stops
 # ---------------------------------------------------------------------------
 
+def _stop_name(el) -> str:
+    """Return the human-readable name of a StopPlace / ScheduledStopPoint.
+
+    Italian Apulia feeds (FSE, AMTAB, COTRAP, Trenitalia Puglia, ...) put the stop
+    code in Name (e.g. "830041383") and the real name in ShortName ("Monopoli BUS").
+    Prefer ShortName when Name is empty or just repeats the Public/PrivateCode.
+    """
+    name = _txt(el, "Name")
+    short_name = _txt(el, "ShortName")
+    if not short_name:
+        return name
+    codes = {_txt(el, "PublicCode"), _txt(el, "PrivateCode")} - {""}
+    if not name or name in codes:
+        return short_name
+    return name
+
+
 def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
     stops = []
     for sp in root.iter(_t("StopPlace")):
@@ -266,7 +283,7 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
                     stops.append(
                         {
                             "stop_id": sp.get("id"),
-                            "stop_name": _txt(sp, "Name"),
+                            "stop_name": _stop_name(sp),
                             "stop_lat": parts[0],
                             "stop_lon": parts[1],
                         }
@@ -275,7 +292,7 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
         stops.append(
             {
                 "stop_id": sp.get("id"),
-                "stop_name": _txt(sp, "Name"),
+                "stop_name": _stop_name(sp),
                 "stop_lat": lat_el.text.strip(),
                 "stop_lon": lon_el.text.strip(),
             }
@@ -308,7 +325,7 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
                     stops.append(
                         {
                             "stop_id": ssp_id,
-                            "stop_name": _txt(ssp, "Name"),
+                            "stop_name": _stop_name(ssp),
                             "stop_lat": parts[0],
                             "stop_lon": parts[1],
                         }
@@ -317,7 +334,7 @@ def _parse_stops(root) -> tuple[list[dict], dict[str, str]]:
         stops.append(
             {
                 "stop_id": ssp_id,
-                "stop_name": _txt(ssp, "Name"),
+                "stop_name": _stop_name(ssp),
                 "stop_lat": lat_el.text.strip(),
                 "stop_lon": lon_el.text.strip(),
             }
